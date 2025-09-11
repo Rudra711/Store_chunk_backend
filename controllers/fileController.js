@@ -6,6 +6,7 @@ import File from "../models/File.js";
 
 // Upload file
 export const uploadFile = async (req, res) => {
+  const BASE_URL = process.env.BASE_URL;
   try {
     if (!req.file) return res.status(400).json({ error: "File is required" });
     const { folderId } = req.body;
@@ -36,8 +37,9 @@ export const uploadFile = async (req, res) => {
       folderId: folderId || null,
       path: pathArr,
       userId,
-      fileUrl: `/${process.env.UPLOAD_DIR || "uploads"}/${req.file.filename}`
+      fileUrl: `${BASE_URL}/${process.env.UPLOAD_DIR || "uploads"}/${req.file.filename}`
     });
+
 
     await fileDoc.save();
     res.json(fileDoc);
