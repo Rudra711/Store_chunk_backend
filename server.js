@@ -24,9 +24,9 @@ app.use(`/${uploadDir}`, express.static(path.join(process.cwd(), uploadDir)));
 
 
 // API routes
-app.use("/api/auth", authRoutes);
-app.use("/api/folders", folderRoutes);
-app.use("/api/files", fileRoutes);
+app.use("/auth", authRoutes);
+app.use("/folders", folderRoutes);
+app.use("/files", fileRoutes);
 
 const PORT = process.env.PORT || 5000;
 await connectDB(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/drive_db");
