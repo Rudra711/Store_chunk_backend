@@ -25,9 +25,18 @@ export const uploadFile = async (req, res) => {
     if (mime.startsWith("image/")) type = "image";
     else if (mime.startsWith("video/")) type = "video";
     else if (mime.startsWith("audio/")) type = "audio";
-    else if (mime.includes("pdf") || mime.includes("word") || mime.includes("sheet") || mime.includes("excel") || mime.includes("text")) {
+    else if (
+      mime.includes("pdf") ||
+      mime.includes("word") ||
+      mime.includes("sheet") ||
+      mime.includes("excel") ||
+      mime.includes("text")
+    ) {
       type = "document";
     }
+
+    const uploadDir = process.env.UPLOAD_DIR || "uploads";
+    const relativePath = path.join(uploadDir, req.file.filename);
 
     const fileDoc = new File({
       name: req.file.originalname,
@@ -37,9 +46,9 @@ export const uploadFile = async (req, res) => {
       folderId: folderId || null,
       path: pathArr,
       userId,
-      fileUrl: `${BASE_URL}/${process.env.UPLOAD_DIR || "uploads"}/${req.file.filename}`
+      filePath: relativePath, // ✅ saved relative path for disk ops
+      fileUrl: `${BASE_URL}/${relativePath.replace(/\\/g, "/")}`, // ✅ public URL for frontend
     });
-
 
     await fileDoc.save();
     res.json(fileDoc);
@@ -54,7 +63,10 @@ export const listFiles = async (req, res) => {
   try {
     const folderId = req.query.folderId || null;
     const folderVal = folderId === "" ? null : folderId;
-    const files = await File.find({ folderId: folderVal, userId: req.user.id }).sort({ createdAt: -1 });
+    const files = await File.find({
+      folderId: folderVal,
+      userId: req.user.id,
+    }).sort({ createdAt: -1 });
     res.json(files);
   } catch (err) {
     console.error(err);
@@ -83,7 +95,7 @@ export const deleteFile = async (req, res) => {
     const file = await File.findOne({ _id: req.params.id, userId: req.user.id });
     if (!file) return res.status(404).json({ error: "File not found" });
 
-    const physicalPath = path.join(process.cwd(), file.fileUrl);
+    const physicalPath = path.join(process.cwd(), file.filePath);
     fs.unlink(physicalPath, (err) => {
       if (err) console.warn("Error deleting physical file:", err.message);
     });
@@ -102,7 +114,7 @@ export const downloadFile = async (req, res) => {
     const file = await File.findOne({ _id: req.params.id, userId: req.user.id });
     if (!file) return res.status(404).json({ error: "File not found" });
 
-    const absolute = path.join(process.cwd(), file.fileUrl);
+    const absolute = path.join(process.cwd(), file.filePath);
     res.download(absolute, file.name);
   } catch (err) {
     console.error(err);
